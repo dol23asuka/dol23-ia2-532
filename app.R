@@ -7,48 +7,53 @@ library(plotly)
 
 app <- Dash$new(external_stylesheets = dbcThemes$BOOTSTRAP)
 
-msleep2 <- readr::read_csv(here::here('data', 'msleep.csv'))
+df <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-01-21/spotify_songs.csv")
+
+genres <- c("pop","rap","rock","latin","r&b","edm")
 
 app$layout(
     dbcContainer(
         list(
-            htmlH1('Dashr heroky deployment'),
+            htmlH1('Dongxiao Li: DashR heroku deployment'),
             dccGraph(id='plot-area'),
-            htmlDiv(id='output-area'),
             htmlBr(),
-            htmlDiv(id='output-area2'),
+            htmlLabel('Popularity Slider'),
+            dccRangeSlider(
+                id = 'pop-slider',
+                min = 0,
+                max = 100,
+                marks = list("0"="0", "25"="25","50"="50","75"="75","100"="100"),
+                value = list(5,100)
+            ),
             htmlBr(),
+            htmlLabel('Music Genre Dropdown Menu'),
             dccDropdown(
-                id='col-select',
-                options = msleep2 %>% colnames %>% purrr::map(function(col) list(label = col, value = col)),
-                value='bodywt')
+                id='genre-select',
+                options = genres %>% purrr::map(function(genre, pop) list(label = genre, value = genre)),
+                value=list("rock","pop"),
+                multi=TRUE)
+            
         )
     )
 )
 
 app$callback(
     output('plot-area', 'figure'),
-    list(input('col-select', 'value')),
-    function(xcol) {
-        p <- ggplot(msleep2) +
-            aes(x = !!sym(xcol),
-                y = sleep_total,
-                color = vore,
-                text = name) +
-            geom_point() +
-            scale_x_log10() +
-            ggthemes::scale_color_tableau()
-        ggplotly(p) %>% layout(dragmode = 'select')
-    }
-)
-
-app$callback(
-    list(output('output-area', 'children'),
-         output('output-area2', 'children')),
-    list(input('plot-area', 'selectedData'),
-         input('plot-area', 'hoverData')),
-    function(selected_data, hover_data) {
-        list(toString(selected_data), toString(hover_data))
+    list(input('genre-select', 'value'),
+         input('pop-slider','value')),
+    function(genre, pop) {
+        p <- df %>% 
+            filter(playlist_genre %in% genre) %>%
+            filter(track_popularity >= pop[1] & track_popularity <= pop[2]) %>%
+             ggplot(aes(y = playlist_genre,
+                 fill = playlist_genre)) +
+            geom_bar(alpha = 0.6) +
+            xlab("Music Genres") +
+            ylab("Number of Song Records") +
+            ggthemes::scale_fill_tableau() +
+            theme_bw()
+        p <- p + guides(fill=guide_legend(title="Music Genre"))
+        ggplotly(p)
     }
 )
 
