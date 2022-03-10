@@ -1,5 +1,5 @@
 library(dash)
-library(dashCoreComponents)
+#library(dashCoreComponents)
 library(dashHtmlComponents)
 library(dashBootstrapComponents)
 library(ggplot2)
